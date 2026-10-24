@@ -245,6 +245,10 @@ const TaskflowDashboard = {
       if (window.TaskflowTasks) {
         window.TaskflowTasks.applyFilters();
       }
+      if (viewName === 'overview') {
+        // Redraw overview charts after view becomes visible
+        requestAnimationFrame(() => this.renderOverviewCharts());
+      }
     } else if (viewName === 'review-pipeline') {
       if (window.TaskflowTasks) {
         window.TaskflowTasks.renderReviewPipeline();

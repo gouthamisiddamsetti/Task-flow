@@ -20,15 +20,18 @@ services:
     volumes:
       - taskflow_data:/app/data
       - taskflow_uploads:/app/static/uploads/proofs
+      - taskflow_avatars:/app/static/uploads/avatars
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/login"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
 volumes:
   taskflow_data:
     name: taskflow_sqlite_data
   taskflow_uploads:
     name: taskflow_proof_uploads
+  taskflow_avatars:
+    name: taskflow_avatar_images
