@@ -15,7 +15,7 @@ def admin_required(f):
         if not user_id:
             return jsonify(error="Authentication required"), 401
         user = db.session.get(User, user_id)
-        if not user or not user.is_admin:
+        if not user or not (user.is_admin or user.role == "Admin"):
             return jsonify(error="Administrator privileges required."), 403
         return f(*args, **kwargs)
     return wrap

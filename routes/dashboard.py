@@ -17,7 +17,7 @@ def get_role_scoped_task_query(current_user, team_id_override=None, all_company=
     if team_id_override:
         query = query.filter(Task.team_id == team_id_override)
     elif all_company and (current_user.role == "Admin" or current_user.is_admin):
-        pass  # Global access for Admin across all company
+        pass  # Global access for Admin across all company squads
     elif current_user.role in ("Lead", "Member", "Employee") and current_user.team_id:
         query = query.filter(db.or_(
             Task.team_id == current_user.team_id,

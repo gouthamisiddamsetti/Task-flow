@@ -224,7 +224,7 @@ def google():
     if not user:
         name = id_info.get("name") or email.split("@")[0]
         is_first = User.query.count() == 0
-        user = User(username=name, email=email, is_admin=is_first)
+        user = User(username=name, email=email, is_admin=is_first, role="Admin" if is_first else "Member")
         user.set_password(os.urandom(24).hex())
         db.session.add(user)
         db.session.commit()
