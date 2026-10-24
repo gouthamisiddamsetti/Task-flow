@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Taskflow — Enterprise Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/table.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components/modals.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .persona-card {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .persona-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-color: var(--color-brand-primary, #2E7D32);
+    }
+    .persona-card:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body data-page="login">
+  <main class="landing">
+    <!-- Left Hero Section -->
+    <section class="hero">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="36" height="36" fill="#2E7D32">
+          <path d="M20 4C9 4 4 9 4 16c0 1.6.4 3 1 4 1-4 4-8 9-10-4 3-6 6-7 11 1 .6 2 1 3 1 8 0 10-8 10-18z"/>
+        </svg>
+        <span class="brand-name">Taskflow</span>
+        <span class="pro-badge">ENTERPRISE</span>
+      </div>
+      <h1>Enterprise Multi-Tier Task Management & Productivity</h1>
+      <p>
+        Unified task lifecycle tracking with granular Role-Based Access Control, 
+        verifiable proof of work submission pipelines, automated review workflows, 
+        and an integrated AI Productivity Assistant.
+      </p>
+
+      <!-- Quick 1-Click Persona Demo Cards -->
+      <div style="margin-top: 32px;">
+        <span style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted);">
+          ⚡ Quick 1-Click Demo Logins
+        </span>
+        <div class="persona-cards-grid">
+          <div class="persona-card" onclick="quickLogin('admin@taskflow.local')">
+            <span class="persona-role">👑 Admin</span>
+            <span class="persona-name">System Administrator</span>
+            <span class="persona-email">admin@taskflow.local</span>
+          </div>
+
+          <div class="persona-card" onclick="quickLogin('lead_backend@taskflow.local')">
+            <span class="persona-role">💼 Team Lead</span>
+            <span class="persona-name">Sarah Jenkins</span>
+            <span class="persona-email">lead_backend@taskflow.local</span>
+          </div>
+
+          <div class="persona-card" onclick="quickLogin('dev_backend@taskflow.local')">
+            <span class="persona-role">💻 Backend Member</span>
+            <span class="persona-name">Alex Rivera</span>
+            <span class="persona-email">dev_backend@taskflow.local</span>
+          </div>
+
+          <div class="persona-card" onclick="quickLogin('dev_frontend@taskflow.local')">
+            <span class="persona-role">🎨 Frontend Member</span>
+            <span class="persona-name">Elena Rostova</span>
+            <span class="persona-email">dev_frontend@taskflow.local</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Card: Auth Form -->
+    <section class="card auth">
+      <div class="tabs">
+        <button type="button" class="tab active" id="tab-login" onclick="switchAuthTab('login')">Log in</button>
+        <button type="button" class="tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign up</button>
+      </div>
+
+      <form id="auth-form" novalidate onsubmit="handleAuthSubmit(event)">
+        <div id="signup-fields" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="auth-username">Full Name</label>
+            <input type="text" name="username" id="auth-username" class="form-input" placeholder="e.g. Maya Lin" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="auth-role">Role Persona</label>
+            <select name="role" id="auth-role" class="form-select" onchange="handleRoleChange(this.value)">
+              <option value="Member">Member (Software Engineer)</option>
+              <option value="Lead">Team Lead</option>
+              <option value="Admin">Admin (Engineering Manager)</option>
+            </select>
+          </div>
+          <div class="form-group" id="group-auth-team">
+            <label class="form-label" for="auth-team">Assigned Squad</label>
+            <select name="team_id" id="auth-team" class="form-select">
+              <option value="">None / Unassigned Squad</option>
+              {% if teams %}
+                {% for team in teams %}
+                  <option value="{{ team.id }}">{{ team.name }}</option>
+                {% endfor %}
+              {% else %}
+                <option value="1">Backend Systems</option>
+                <option value="2">Frontend Core</option>
+              {% endif %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="auth-email">Work Email</label>
+          <input type="email" name="email" id="auth-email" class="form-input" required placeholder="name@company.com" autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="auth-password">Password</label>
+          <input type="password" name="password" id="auth-password" class="form-input" required minlength="8" placeholder="Minimum 8 characters" autocomplete="current-password">
+        </div>
+
+        <p id="auth-error" class="error" role="alert" style="margin: 4px 0 0; font-size: 13px; color: var(--color-error-fg); font-weight: 500;"></p>
+
+        <button type="submit" class="btn primary" id="auth-submit-btn" style="width: 100%; justify-content: center; height: 44px; font-size: 15px; font-weight: 600; margin-top: 4px;">
+          Log in
+        </button>
+      </form>
+
+      <div style="text-align: center; font-size: 12px; color: var(--color-text-muted); margin-top: 8px;">
+        Default seeded password for all demo accounts: <code style="font-weight: 700; color: var(--color-brand-primary); background: var(--color-brand-soft); padding: 2px 6px; border-radius: 4px;">password123</code>
+      </div>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  <script>
+    let authMode = 'login';
+
+    function switchAuthTab(mode) {
+      authMode = mode;
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      const signupFields = document.getElementById('signup-fields');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const errorEl = document.getElementById('auth-error');
+
+      errorEl.textContent = '';
+
+      if (mode === 'login') {
+        tabLogin.classList.add('active');
+        tabSignup.classList.remove('active');
+        signupFields.style.display = 'none';
+        submitBtn.textContent = 'Log in';
+        document.getElementById('auth-password').setAttribute('autocomplete', 'current-password');
+      } else {
+        tabLogin.classList.remove('active');
+        tabSignup.classList.add('active');
+        signupFields.style.display = 'flex';
+        submitBtn.textContent = 'Create Enterprise Account';
+        document.getElementById('auth-password').setAttribute('autocomplete', 'new-password');
+        ensureTeamsLoaded();
+      }
+    }
+
+    function handleRoleChange(role) {
+      const teamSelect = document.getElementById('auth-team');
+      if (role === 'Admin') {
+        if (teamSelect) teamSelect.value = '';
+      }
+    }
+
+    async function ensureTeamsLoaded() {
+      const teamSelect = document.getElementById('auth-team');
+      if (!teamSelect) return;
+      if (teamSelect.options.length <= 1) {
+        try {
+          const res = await fetch('/api/auth/teams');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.teams && data.teams.length > 0) {
+              const currentVal = teamSelect.value;
+              teamSelect.innerHTML = '<option value="">None / Unassigned Squad</option>';
+              data.teams.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.name;
+                if (String(t.id) === String(currentVal)) opt.selected = true;
+                teamSelect.appendChild(opt);
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Could not refresh teams dropdown:', e);
+        }
+      }
+    }
+
+    async function quickLogin(email) {
+      const errorEl = document.getElementById('auth-error');
+      errorEl.textContent = '';
+      switchAuthTab('login');
+
+      const emailInput = document.getElementById('auth-email');
+      const passwordInput = document.getElementById('auth-password');
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      if (emailInput) emailInput.value = email;
+      if (passwordInput) passwordInput.value = 'password123';
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Logging in...';
+      }
+
+      try {
+        await window.TaskflowAuth.login(email, 'password123');
+        window.location.href = '/';
+      } catch (err) {
+        errorEl.textContent = err.message || 'Login failed.';
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Log in';
+        }
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const errorEl = document.getElementById('auth-error');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      errorEl.textContent = '';
+
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+
+      if (!email || !password) {
+        errorEl.textContent = 'Please provide both email and password.';
+        return;
+      }
+
+      if (authMode === 'login') {
+        try {
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging in...';
+          }
+          await window.TaskflowAuth.login(email, password);
+          window.location.href = '/';
+        } catch (err) {
+          errorEl.textContent = err.message || 'Login failed.';
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Log in';
+          }
+        }
+      } else {
+        const username = document.getElementById('auth-username').value.trim();
+        const role = document.getElementById('auth-role').value;
+        const teamSelect = document.getElementById('auth-team');
+        const team_id = teamSelect && teamSelect.value ? parseInt(teamSelect.value, 10) : null;
+
+        if (!username) {
+          errorEl.textContent = 'Please enter your full name.';
+          return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          errorEl.textContent = 'A valid email address is required.';
+          return;
+        }
+
+        if (password.length < 8) {
+          errorEl.textContent = 'Password must be at least 8 characters long.';
+          return;
+        }
+
+        try {
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating account...';
+          }
+          await window.TaskflowAuth.register({ username, email, password, role, team_id });
+          window.location.href = '/';
+        } catch (err) {
+          errorEl.textContent = err.message || 'Registration failed.';
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Enterprise Account';
+          }
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureTeamsLoaded();
+    });
+  </script>
+</body>
+</html>

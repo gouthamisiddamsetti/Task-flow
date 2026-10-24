@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskflow_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=False
+      - FLASK_RUN_HOST=0.0.0.0
+      - FLASK_RUN_PORT=5000
+      - SECRET_KEY=taskflow-enterprise-secret-key-change-in-production
+      - DATABASE_URL=sqlite:////app/data/database.db
+      - DOCKER_CONTAINER=1
+    volumes:
+      - taskflow_data:/app/data
+      - taskflow_uploads:/app/static/uploads/proofs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  taskflow_data:
+    name: taskflow_sqlite_data
+  taskflow_uploads:
+    name: taskflow_proof_uploads
