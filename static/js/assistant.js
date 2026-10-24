@@ -14,6 +14,21 @@ const TaskflowAssistant = {
     this.bindChips();
     this.bindInputForm();
     this.bindCornerWidget();
+    this.bindKeyboardShortcut();
+  },
+
+  bindKeyboardShortcut() {
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+/ or Cmd+/ opens the AI copilot
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        this.toggleCornerWidget();
+      }
+      // Escape closes it
+      if (e.key === 'Escape' && this.isOpen) {
+        this.closeCornerWidget();
+      }
+    });
   },
 
   bindCornerWidget() {
@@ -63,31 +78,38 @@ const TaskflowAssistant = {
 
   toggleCornerWidget() {
     const widget = document.getElementById('ai-corner-widget');
+    const fabBtn = document.getElementById('ai-fab-launcher');
     if (!widget) return;
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
       widget.classList.add('open');
+      if (fabBtn) fabBtn.classList.add('active');
       const input = document.getElementById('corner-assistant-input');
       if (input) setTimeout(() => input.focus(), 150);
     } else {
       widget.classList.remove('open');
+      if (fabBtn) fabBtn.classList.remove('active');
     }
   },
 
   openCornerWidget() {
     const widget = document.getElementById('ai-corner-widget');
+    const fabBtn = document.getElementById('ai-fab-launcher');
     if (!widget) return;
     this.isOpen = true;
     widget.classList.add('open');
+    if (fabBtn) fabBtn.classList.add('active');
     const input = document.getElementById('corner-assistant-input');
     if (input) setTimeout(() => input.focus(), 150);
   },
 
   closeCornerWidget() {
     const widget = document.getElementById('ai-corner-widget');
+    const fabBtn = document.getElementById('ai-fab-launcher');
     if (!widget) return;
     this.isOpen = false;
     widget.classList.remove('open');
+    if (fabBtn) fabBtn.classList.remove('active');
   },
 
   toggleMinimize() {

@@ -86,10 +86,10 @@ const TaskflowDashboard = {
     const compEl = document.getElementById('stat-completed');
     const overdueEl = document.getElementById('stat-overdue');
 
-    if (totalEl) totalEl.textContent = stats.total ?? 0;
-    if (inProgEl) inProgEl.textContent = stats.in_progress ?? 0;
-    if (compEl) compEl.textContent = stats.completed ?? 0;
-    if (overdueEl) overdueEl.textContent = stats.overdue ?? 0;
+    this.animateCounter(totalEl, stats.total ?? 0);
+    this.animateCounter(inProgEl, stats.in_progress ?? 0);
+    this.animateCounter(compEl, stats.completed ?? 0);
+    this.animateCounter(overdueEl, stats.overdue ?? 0);
 
     // Sidebar counter badges
     const badgeTotal = document.getElementById('badge-total');
@@ -97,6 +97,34 @@ const TaskflowDashboard = {
 
     const badgeReview = document.getElementById('badge-review');
     if (badgeReview) badgeReview.textContent = stats.in_review ?? 0;
+  },
+
+  animateCounter(el, targetValue) {
+    if (!el) return;
+    const startVal = parseInt(el.textContent) || 0;
+    const endVal = targetValue;
+    const duration = 700;
+    const startTime = performance.now();
+
+    el.classList.remove('animate-count');
+
+    const step = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(startVal + (endVal - startVal) * eased);
+      el.textContent = current;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = endVal;
+        el.classList.add('animate-count');
+      }
+    };
+
+    requestAnimationFrame(step);
   },
 
   renderDonutChart(stats) {

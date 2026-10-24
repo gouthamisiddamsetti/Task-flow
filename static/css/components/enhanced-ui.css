@@ -1,0 +1,430 @@
+/**
+ * TASKFLOW PRO — ENHANCED INTERACTIVE UI COMPONENT STYLES
+ * static/css/components/enhanced-ui.css
+ *
+ * Rich color combinations, animated metric cards, gradient accents,
+ * sidebar hover shimmer, animated counter numbers, toast notifications,
+ * and elevated glassmorphism surfaces.
+ */
+
+/* ==========================================================================
+   ANIMATED SIDEBAR NAVIGATION — ACTIVE INDICATOR & HOVER SHIMMER
+   ========================================================================== */
+.sidebar nav a {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 60%;
+  background: var(--color-brand-primary);
+  border-radius: 0 3px 3px 0;
+  transition: transform 0.22s var(--ease-spring), opacity 0.2s;
+  opacity: 0;
+}
+
+.sidebar nav a.active::after {
+  transform: translateY(-50%) scaleY(1);
+  opacity: 1;
+}
+
+.sidebar nav a::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--color-brand-glow) 0%, transparent 80%);
+  opacity: 0;
+  transition: opacity 0.25s;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.sidebar nav a:hover::before {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   METRIC CARDS — GLOW ACCENT, ANIMATED COUNTER, BORDER SHIMMER
+   ========================================================================== */
+.metric.interactive-card {
+  cursor: default;
+  transition: box-shadow 0.28s ease, transform 0.28s ease, border-color 0.25s;
+  border-left: 3px solid transparent;
+  overflow: hidden;
+}
+
+.metric.interactive-card[data-metric="total"] {
+  border-left-color: #0284C7;
+}
+
+.metric.interactive-card[data-metric="progress"] {
+  border-left-color: #D97706;
+}
+
+.metric.interactive-card[data-metric="completed"] {
+  border-left-color: #15803D;
+}
+
+.metric.interactive-card[data-metric="overdue"] {
+  border-left-color: #DC2626;
+}
+
+.metric.interactive-card:hover {
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px) perspective(800px);
+}
+
+.metric.interactive-card strong {
+  transition: color 0.3s;
+}
+
+/* ==========================================================================
+   ANIMATED NUMBER COUNTER (JS adds .counting class)
+   ========================================================================== */
+@keyframes countUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.metric strong.animate-count {
+  animation: countUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   AVATAR BUTTON — RING GLOW ON HOVER (TOP BAR)
+   ========================================================================== */
+.avatar:hover {
+  box-shadow: 0 0 0 3px var(--color-brand-glow), 0 0 0 5px var(--color-brand-border);
+  transform: scale(1.05);
+  transition: all 0.2s var(--ease-spring);
+}
+
+/* ==========================================================================
+   LOGOUT & CONTROL BUTTONS — SUBTLE DANGER GLOW
+   ========================================================================== */
+.logout-btn:hover {
+  border-color: var(--color-error-border) !important;
+  color: var(--color-error-fg) !important;
+  box-shadow: 0 0 0 3px var(--color-error-pulse) !important;
+}
+
+/* ==========================================================================
+   TOP BAR GREETING — GRADIENT TEXT EFFECT
+   ========================================================================== */
+#user-greeting {
+  background: linear-gradient(135deg, var(--color-text-primary) 60%, var(--color-brand-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  width: fit-content;
+}
+
+/* ==========================================================================
+   PRIMARY BUTTONS — SHIMMER HOVER EFFECT
+   ========================================================================== */
+.btn.primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn.primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s;
+  pointer-events: none;
+}
+
+.btn.primary:hover::after {
+  left: 160%;
+}
+
+/* ==========================================================================
+   CARD ELEVATED GLASSMORPHISM SURFACE FOR DARK THEMES
+   ========================================================================== */
+[data-theme="dark"] .card,
+[data-theme="midnight"] .card,
+[data-theme="emerald"] .card,
+[data-theme="cyber"] .card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+[data-theme="dark"] .card:hover,
+[data-theme="midnight"] .card:hover,
+[data-theme="emerald"] .card:hover,
+[data-theme="cyber"] .card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   ICON BOX ENHANCEMENTS IN DARK THEMES
+   ========================================================================== */
+[data-theme="dark"] .icon-total,
+[data-theme="midnight"] .icon-total { background: rgba(2, 132, 199, 0.2); color: #38BDF8; }
+
+[data-theme="dark"] .icon-prog,
+[data-theme="midnight"] .icon-prog  { background: rgba(217, 119, 6, 0.2); color: #FBBF24; }
+
+[data-theme="dark"] .icon-comp,
+[data-theme="midnight"] .icon-comp  { background: rgba(21, 128, 61, 0.2); color: #4ADE80; }
+
+[data-theme="dark"] .icon-over,
+[data-theme="midnight"] .icon-over  { background: rgba(220, 38, 38, 0.2); color: #F87171; }
+
+[data-theme="emerald"] .icon-total  { background: rgba(16, 185, 129, 0.2); color: #6EE7B7; }
+[data-theme="emerald"] .icon-prog   { background: rgba(245, 158, 11, 0.2); color: #FCD34D; }
+[data-theme="emerald"] .icon-comp   { background: rgba(16, 185, 129, 0.3); color: #A7F3D0; }
+[data-theme="emerald"] .icon-over   { background: rgba(248, 113, 113, 0.2); color: #FCA5A5; }
+
+[data-theme="cyber"] .icon-total  { background: rgba(56, 189, 248, 0.2); color: #67E8F9; }
+[data-theme="cyber"] .icon-prog   { background: rgba(245, 158, 11, 0.2); color: #FCD34D; }
+[data-theme="cyber"] .icon-comp   { background: rgba(168, 85, 247, 0.3); color: #D8B4FE; }
+[data-theme="cyber"] .icon-over   { background: rgba(248, 113, 113, 0.2); color: #FCA5A5; }
+
+/* ==========================================================================
+   SIDEBAR ACTIVE LINK — GLOW ACCENT PER THEME
+   ========================================================================== */
+[data-theme="midnight"] .sidebar nav a.active {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38BDF8;
+}
+
+[data-theme="emerald"] .sidebar nav a.active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10B981;
+}
+
+[data-theme="cyber"] .sidebar nav a.active {
+  background: rgba(168, 85, 247, 0.14);
+  color: #A855F7;
+}
+
+/* ==========================================================================
+   ASSISTANT CHIP — PILL GLOW ON HOVER
+   ========================================================================== */
+.assistant-chip:hover {
+  transform: scale(1.04) translateY(-1px);
+  box-shadow: 0 4px 12px var(--color-brand-glow);
+}
+
+/* ==========================================================================
+   AI CORNER WIDGET — THEME-AWARE GRADIENT HEADER
+   ========================================================================== */
+[data-theme="midnight"] .ai-corner-head {
+  background: linear-gradient(135deg, #0A0F1D 0%, #1E2C48 100%);
+  border-bottom-color: rgba(56, 189, 248, 0.2);
+}
+
+[data-theme="emerald"] .ai-corner-head {
+  background: linear-gradient(135deg, #051811 0%, #0C2E22 100%);
+  border-bottom-color: rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="cyber"] .ai-corner-head {
+  background: linear-gradient(135deg, #0D091A 0%, #1E1438 100%);
+  border-bottom-color: rgba(168, 85, 247, 0.25);
+}
+
+/* ==========================================================================
+   OVERVIEW SECTION — SECTION FADE-IN ON LOAD
+   ========================================================================== */
+@keyframes sectionFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+[data-view]:not([hidden]) {
+  animation: sectionFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ==========================================================================
+   CHARTS CARD — HOVER GLOW
+   ========================================================================== */
+.overview-charts-card:hover {
+  box-shadow: 0 0 0 2px var(--color-brand-border), 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* ==========================================================================
+   THEME CHOICE CARD SWATCH — HOVER LIFT
+   ========================================================================== */
+.theme-choice-card {
+  transition: transform 0.2s var(--ease-spring), border-color 0.2s, box-shadow 0.2s;
+}
+
+.theme-choice-card:hover {
+  transform: translateY(-3px);
+}
+
+.theme-choice-card.selected {
+  background: var(--color-brand-soft);
+}
+
+/* ==========================================================================
+   PROFILE AVATAR UPLOADER — RING ANIMATION ON HOVER
+   ========================================================================== */
+.profile-avatar-uploader:hover {
+  box-shadow: 0 0 0 4px var(--color-brand-glow), 0 0 0 7px var(--color-brand-border);
+  transition: box-shadow 0.25s var(--ease-spring);
+}
+
+/* ==========================================================================
+   MINI CALENDAR — TODAY CIRCLE PULSE
+   ========================================================================== */
+@keyframes todayPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--color-brand-glow); }
+  50%       { box-shadow: 0 0 0 6px transparent; }
+}
+
+.full-cal-day.today .full-cal-date-num {
+  animation: todayPulse 2.5s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   DONUT CARD — GRADIENT STROKE & GLOW
+   ========================================================================== */
+.donut-progress-circle {
+  stroke: var(--color-brand-primary);
+  filter: drop-shadow(0 0 6px var(--color-brand-glow));
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s;
+}
+
+/* ==========================================================================
+   STATUS PILLS — GLOW RING ON HOVER
+   ========================================================================== */
+.pill:hover {
+  transform: scale(1.06);
+  transition: transform 0.15s var(--ease-spring);
+}
+
+/* ==========================================================================
+   TASK TABLE ROW — ANIMATED HIGHLIGHT
+   ========================================================================== */
+@keyframes rowHighlight {
+  0%   { background-color: var(--color-brand-soft); }
+  100% { background-color: transparent; }
+}
+
+.task-table tbody tr.just-updated {
+  animation: rowHighlight 1.8s ease-out forwards;
+}
+
+/* ==========================================================================
+   NOTIFICATION BELL — SHAKE ANIMATION WHEN THERE ARE NEW NOTIFS
+   ========================================================================== */
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  15%       { transform: rotate(-14deg); }
+  30%       { transform: rotate(12deg); }
+  45%       { transform: rotate(-10deg); }
+  60%       { transform: rotate(8deg); }
+  75%       { transform: rotate(-6deg); }
+  90%       { transform: rotate(4deg); }
+}
+
+.notif-bell-btn.has-new .notif-bell-icon {
+  animation: bellShake 0.7s ease-in-out;
+}
+
+/* ==========================================================================
+   SEARCH BOX — EXPANDING FOCUS EFFECT
+   ========================================================================== */
+.search-box input {
+  transition: width 0.28s var(--ease-standard), border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-box input:focus {
+  box-shadow: 0 0 0 3px var(--color-brand-glow);
+}
+
+/* ==========================================================================
+   DIALOG / MODAL — SPRING ENTRANCE
+   ========================================================================== */
+@keyframes modalSpring {
+  0%   { opacity: 0; transform: scale(0.88) translateY(16px); }
+  60%  { transform: scale(1.02) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+dialog[open] {
+  animation: modalSpring 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ==========================================================================
+   CATEGORY CARDS — PROGRESS BAR SHIMMER
+   ========================================================================== */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.cat-bar {
+  background: linear-gradient(
+    90deg,
+    var(--color-brand-primary) 0%,
+    var(--color-brand-hover) 50%,
+    var(--color-brand-primary) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.2s linear infinite;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   TEAM MEMBER CARDS — ONLINE PRESENCE INDICATOR PULSE
+   ========================================================================== */
+@keyframes presencePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.4); }
+}
+
+.presence-dot.online {
+  animation: presencePulse 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   FAB BUTTON — SUBTLE ROTATION ON OPEN
+   ========================================================================== */
+.ai-fab-btn svg {
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.ai-fab-btn.active svg {
+  transform: rotate(20deg) scale(1.1);
+}
+
+/* ==========================================================================
+   RESPONSIVE — ADJUSTED FOR MOBILE
+   ========================================================================== */
+@media (max-width: 640px) {
+  .metric.interactive-card {
+    border-left-width: 2px;
+  }
+
+  .ai-corner-widget {
+    width: calc(100vw - 20px);
+    right: 10px;
+    bottom: 84px;
+  }
+
+  .overview-charts-card {
+    padding: 14px;
+  }
+
+  .chart-canvas-box {
+    height: 190px;
+  }
+}
