@@ -1,6 +1,9 @@
+import os
+import uuid
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, session
 from flask_socketio import SocketIO, join_room, leave_room, emit
+from werkzeug.utils import secure_filename
 from models import db, User, Team, Task, ChatMessage
 from utils.auth_decorators import login_required
 
@@ -106,6 +109,41 @@ def get_messages():
     messages = query.order_by(ChatMessage.created_at.asc()).limit(150).all()
 
     return jsonify(messages=[m.to_dict() for m in messages]), 200
+
+@chat_bp.post("/upload")
+@login_required
+def upload_chat_attachment():
+    """
+    Upload a file attachment from local disk for team messaging.
+    Saves to static/uploads/attachments/ and returns public URL.
+    """
+    user_id = session.get("user_id")
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify(error="Authentication required."), 401
+
+    if "file" not in request.files:
+        return jsonify(error="No file attached."), 400
+
+    file = request.files["file"]
+    if not file or not file.filename:
+        return jsonify(error="No file selected."), 400
+
+    orig_name = secure_filename(file.filename) or "attachment"
+    upload_folder = os.path.join("static", "uploads", "attachments")
+    os.makedirs(upload_folder, exist_ok=True)
+
+    unique_filename = f"{int(datetime.now(timezone.utc).timestamp())}_{uuid.uuid4().hex[:6]}_{orig_name}"
+    save_path = os.path.join(upload_folder, unique_filename)
+    file.save(save_path)
+
+    relative_url = f"/static/uploads/attachments/{unique_filename}"
+    return jsonify(
+        url=relative_url,
+        filename=orig_name,
+        size=os.path.getsize(save_path),
+        message="File uploaded successfully."
+    ), 200
 
 @chat_bp.post("/messages")
 @login_required
@@ -235,4 +273,4 @@ def handle_send_message(data):
     room = f"task_{task_id}" if task_id else f"team_{team_id}"
 
     # Broadcast to all clients in the room (including sender)
-    emit("new_message", msg_dict, to=room)
+    emit("new_message", msg_dict, to=room, include_self=True)

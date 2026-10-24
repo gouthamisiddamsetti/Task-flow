@@ -299,6 +299,20 @@ const TaskflowDashboard = {
         window.TaskflowAttendance.fetchLeaves();
         window.TaskflowAttendance.fetchPresenceMap();
       }
+    } else if (viewName === 'admin') {
+      const user = window.TaskflowAuth?.currentUser;
+      const isAdmin = user && (user.role === 'Admin' || user.is_admin);
+      if (!isAdmin) {
+        this.switchView('overview');
+        return;
+      }
+      if (window.TaskflowAttendance) {
+        window.TaskflowAttendance.fetchWorkforceSummary();
+      }
+    } else if (viewName === 'meetings') {
+      if (window.TaskflowMeetings) {
+        window.TaskflowMeetings.loadMeetings();
+      }
     }
   },
 

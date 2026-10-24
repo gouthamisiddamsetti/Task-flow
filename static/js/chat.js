@@ -1,6 +1,8 @@
 /**
  * Taskflow Instant Messaging & Task Collaboration Module
  * Real-time WebSockets powered by Socket.IO with HTTP fallback.
+ * Supports local file folder attachments, multi-channel squad streams,
+ * and Slack/Teams chat layout.
  */
 
 const TaskflowChat = {
@@ -9,6 +11,7 @@ const TaskflowChat = {
   channels: [],
   messages: [],
   unreadTotal: 0,
+  pendingAttachment: null,
 
   async init() {
     this.initSocket();
@@ -27,12 +30,24 @@ const TaskflowChat = {
         });
 
         this.socket.on('connect', () => {
-          console.log('[Chat] Socket connected successfully');
+          const statusBadge = document.getElementById('chat-connection-status');
+          if (statusBadge) {
+            statusBadge.textContent = 'Connected';
+            statusBadge.className = 'chat-badge-connected';
+          }
           if (this.activeChannel) {
             this.socket.emit('join_room', {
               team_id: this.activeChannel.team_id,
               task_id: this.activeChannel.task_id
             });
+          }
+        });
+
+        this.socket.on('disconnect', () => {
+          const statusBadge = document.getElementById('chat-connection-status');
+          if (statusBadge) {
+            statusBadge.textContent = 'Reconnecting...';
+            statusBadge.className = 'chat-badge-connecting';
           }
         });
 
@@ -55,26 +70,111 @@ const TaskflowChat = {
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input-text');
     const btnAttach = document.getElementById('btn-chat-attach');
+    const fileInput = document.getElementById('chat-file-input');
 
     if (chatForm) {
-      chatForm.addEventListener('submit', (e) => {
+      chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const text = chatInput?.value?.trim();
-        if (!text) return;
-        this.sendMessage(text);
+        const text = chatInput?.value?.trim() || '';
+        const attachmentUrl = this.pendingAttachment ? this.pendingAttachment.url : null;
+
+        if (!text && !attachmentUrl) return;
+
+        const contentToSend = text || (this.pendingAttachment ? `Attached: ${this.pendingAttachment.filename}` : 'Shared an attachment');
+        await this.sendMessage(contentToSend, attachmentUrl);
+
         if (chatInput) chatInput.value = '';
+        this.clearPendingAttachment();
       });
     }
 
-    if (btnAttach) {
+    // Local file folder attachment trigger
+    if (btnAttach && fileInput) {
       btnAttach.addEventListener('click', () => {
-        const url = prompt('Enter attachment URL (e.g. image link, document URL, Git commit):');
-        if (url && url.trim()) {
-          const text = chatInput?.value?.trim() || 'Attached file:';
-          this.sendMessage(text, url.trim());
-          if (chatInput) chatInput.value = '';
-        }
+        fileInput.click();
       });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        await this.uploadLocalFile(file);
+        fileInput.value = '';
+      });
+    }
+  },
+
+  async uploadLocalFile(file) {
+    const previewContainer = document.getElementById('chat-attachment-preview');
+    if (previewContainer) {
+      previewContainer.style.display = 'flex';
+      previewContainer.innerHTML = `
+        <span class="attachment-uploading-pill">
+          ⏳ Uploading ${this.escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)...
+        </span>
+      `;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/chat/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to upload attachment from folder.');
+        this.clearPendingAttachment();
+        return;
+      }
+
+      this.pendingAttachment = {
+        url: data.url,
+        filename: data.filename,
+        size: data.size
+      };
+
+      this.renderPendingAttachment();
+    } catch (err) {
+      console.error('[Chat] Attachment upload failed:', err);
+      alert('Error uploading file from folder.');
+      this.clearPendingAttachment();
+    }
+  },
+
+  renderPendingAttachment() {
+    const previewContainer = document.getElementById('chat-attachment-preview');
+    if (!previewContainer) return;
+
+    if (!this.pendingAttachment) {
+      previewContainer.style.display = 'none';
+      previewContainer.innerHTML = '';
+      return;
+    }
+
+    previewContainer.style.display = 'flex';
+    previewContainer.innerHTML = `
+      <div class="attachment-draft-card">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span class="attachment-draft-name">${this.escapeHtml(this.pendingAttachment.filename)}</span>
+        <button type="button" class="attachment-draft-remove" onclick="TaskflowChat.clearPendingAttachment()" title="Remove Attachment">&times;</button>
+      </div>
+    `;
+  },
+
+  clearPendingAttachment() {
+    this.pendingAttachment = null;
+    const previewContainer = document.getElementById('chat-attachment-preview');
+    if (previewContainer) {
+      previewContainer.style.display = 'none';
+      previewContainer.innerHTML = '';
     }
   },
 
@@ -86,7 +186,6 @@ const TaskflowChat = {
       this.channels = data.channels || [];
       this.renderChannelList();
 
-      // Automatically select first channel if none selected
       if (!this.activeChannel && this.channels.length > 0) {
         this.selectChannel(this.channels[0].id);
       }
@@ -104,33 +203,28 @@ const TaskflowChat = {
 
     let html = '';
 
-    // Team Channel section
-    html += `<div class="channel-group-title">Channels</div>`;
+    html += `<div class="channel-group-title">Squad Channels</div>`;
     teamChannels.forEach(c => {
       const isActive = this.activeChannel && this.activeChannel.id === c.id;
       html += `
         <div class="channel-item ${isActive ? 'active' : ''}" onclick="TaskflowChat.selectChannel('${c.id}')">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
-            <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
-          </svg>
-          <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(c.title)}</span>
+          <span class="channel-hash">#</span>
+          <span class="channel-title-text">${this.escapeHtml(c.title.replace(/^#/, ''))}</span>
           ${c.unread_count > 0 ? `<span class="channel-unread-pill">${c.unread_count}</span>` : ''}
         </div>
       `;
     });
 
-    // Task discussion threads
     if (taskThreads.length > 0) {
-      html += `<div class="channel-group-title" style="margin-top: 10px;">Task Discussions</div>`;
+      html += `<div class="channel-group-title" style="margin-top: 14px;">Task Threads</div>`;
       taskThreads.forEach(c => {
         const isActive = this.activeChannel && this.activeChannel.id === c.id;
         html += `
-          <div class="channel-item ${isActive ? 'active' : ''}" onclick="TaskflowChat.selectChannel('${c.id}')" title="${this.escapeHtml(c.title)}">
+          <div class="channel-item ${isActive ? 'active' : ''}" onclick="TaskflowChat.selectChannel('${c.id}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(c.title)}</span>
+            <span class="channel-title-text">${this.escapeHtml(c.title)}</span>
             ${c.unread_count > 0 ? `<span class="channel-unread-pill">${c.unread_count}</span>` : ''}
           </div>
         `;
@@ -144,8 +238,7 @@ const TaskflowChat = {
     const channel = this.channels.find(c => c.id === channelId);
     if (!channel) return;
 
-    // Leave old socket room
-    if (this.socket && this.activeChannel) {
+    if (this.socket && this.socket.connected && this.activeChannel) {
       this.socket.emit('leave_room', {
         team_id: this.activeChannel.team_id,
         task_id: this.activeChannel.task_id
@@ -157,13 +250,11 @@ const TaskflowChat = {
     this.updateSidebarUnreadTotal();
     this.renderChannelList();
 
-    // Update Header
     const titleEl = document.getElementById('chat-active-title');
     const descEl = document.getElementById('chat-active-desc');
     if (titleEl) titleEl.textContent = channel.title;
     if (descEl) descEl.textContent = channel.description || '';
 
-    // Join new socket room
     if (this.socket && this.socket.connected) {
       this.socket.emit('join_room', {
         team_id: channel.team_id,
@@ -171,7 +262,6 @@ const TaskflowChat = {
       });
     }
 
-    // Fetch messages
     await this.fetchMessages(channel.team_id, channel.task_id);
   },
 
@@ -179,7 +269,7 @@ const TaskflowChat = {
     const stream = document.getElementById('chat-messages-stream');
     if (!stream) return;
 
-    stream.innerHTML = `<div style="text-align: center; color: var(--color-text-muted); font-size: 13px; padding: 20px;">Loading message stream...</div>`;
+    stream.innerHTML = `<div class="chat-loading-notice">Loading message stream...</div>`;
 
     try {
       let url = `/api/chat/messages?team_id=${teamId || ''}`;
@@ -201,9 +291,10 @@ const TaskflowChat = {
 
     if (this.messages.length === 0) {
       stream.innerHTML = `
-        <div style="text-align: center; color: var(--color-text-muted); padding: 40px 16px;">
-          <h4 style="margin: 0 0 6px; color: var(--color-text-primary);">Start the conversation</h4>
-          <p style="margin: 0; font-size: 13px;">No messages yet. Send a note to start collaborating with your team.</p>
+        <div class="chat-empty-state">
+          <div class="chat-empty-icon">💬</div>
+          <h4>Start the conversation</h4>
+          <p>No messages yet. Send a note to collaborate with your team.</p>
         </div>
       `;
       return;
@@ -214,26 +305,43 @@ const TaskflowChat = {
     let html = '';
     this.messages.forEach(m => {
       const isOutgoing = m.sender_id === currentUserId;
+      const isImage = m.attachment_url && /\.(png|jpe?g|gif|webp|svg)($|\?)/i.test(m.attachment_url);
+
       html += `
         <div class="chat-bubble-row ${isOutgoing ? 'outgoing' : 'incoming'}">
-          ${!isOutgoing ? `<div class="chat-avatar" title="${this.escapeHtml(m.sender_name)}">${this.escapeHtml(m.sender_initials || 'U')}</div>` : ''}
+          <div class="chat-avatar" title="${this.escapeHtml(m.sender_name)}">
+            ${this.escapeHtml(m.sender_initials || 'U')}
+          </div>
           <div class="chat-bubble-content">
             <div class="chat-sender-meta">
-              ${!isOutgoing ? `<b>${this.escapeHtml(m.sender_name)}</b>` : ''}
-              <span>${this.escapeHtml(m.formatted_time || '')}</span>
+              <b>${this.escapeHtml(m.sender_name)}</b>
+              ${m.sender_role ? `<span class="chat-role-pill">${this.escapeHtml(m.sender_role)}</span>` : ''}
+              <span class="chat-timestamp">${this.escapeHtml(m.formatted_time || '')}</span>
             </div>
             <div class="chat-bubble">
-              ${this.escapeHtml(m.content)}
+              <div class="chat-bubble-text">${this.escapeHtml(m.content)}</div>
               ${m.attachment_url ? `
-                <div>
-                  <a href="${this.escapeHtml(m.attachment_url)}" target="_blank" rel="noopener" class="chat-attachment-link">
-                    📎 View Attachment
-                  </a>
+                <div class="chat-attachment-box">
+                  ${isImage ? `
+                    <a href="${this.escapeHtml(m.attachment_url)}" target="_blank" rel="noopener" class="chat-img-link">
+                      <img src="${this.escapeHtml(m.attachment_url)}" alt="Attachment Preview" class="chat-attachment-img">
+                    </a>
+                  ` : `
+                    <a href="${this.escapeHtml(m.attachment_url)}" target="_blank" rel="noopener" class="chat-file-card" download>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                      <div class="chat-file-info">
+                        <span class="chat-file-title">Downloaded Attachment</span>
+                        <span class="chat-file-sub">Click to view/download file</span>
+                      </div>
+                    </a>
+                  `}
                 </div>
               ` : ''}
             </div>
           </div>
-          ${isOutgoing ? `<div class="chat-avatar" style="background: var(--color-brand-soft); color: var(--color-brand-primary);">${this.escapeHtml(m.sender_initials || 'ME')}</div>` : ''}
         </div>
       `;
     });
@@ -252,43 +360,38 @@ const TaskflowChat = {
       attachment_url: attachmentUrl
     };
 
-    // If socket is connected, emit send_message
+    try {
+      const res = await fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.message) {
+        this.handleIncomingMessage(data.message);
+      }
+    } catch (err) {
+      console.error('[Chat] Message sending failed:', err);
+    }
+
     if (this.socket && this.socket.connected) {
       this.socket.emit('send_message', payload);
-    } else {
-      // Reliable REST HTTP fallback
-      try {
-        const res = await fetch('/api/chat/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok && data.message) {
-          this.handleIncomingMessage(data.message);
-        }
-      } catch (err) {
-        console.error('[Chat] HTTP send failed:', err);
-      }
     }
   },
 
   handleIncomingMessage(msg) {
     if (!msg) return;
 
-    // Check if message belongs to active channel
     const isActiveChannel = this.activeChannel &&
       ((msg.task_id && msg.task_id === this.activeChannel.task_id) ||
        (!msg.task_id && !this.activeChannel.task_id && msg.team_id === this.activeChannel.team_id));
 
     if (isActiveChannel) {
-      // Append to messages list if not duplicate
       if (!this.messages.some(m => m.id === msg.id)) {
         this.messages.push(msg);
         this.renderMessages();
       }
     } else {
-      // Increment unread count for matching channel
       const ch = this.channels.find(c =>
         (msg.task_id && c.task_id === msg.task_id) ||
         (!msg.task_id && !c.task_id && c.team_id === msg.team_id)

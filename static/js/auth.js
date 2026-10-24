@@ -123,10 +123,18 @@ const TaskflowAuth = {
       navReview.hidden = false;
     }
 
-    // Show/hide Admin portal nav
+    // Show/hide Admin portal nav - strictly restricted to Admin role
     const navAdmin = document.getElementById('nav-admin');
     if (navAdmin) {
-      navAdmin.hidden = !isAdmin;
+      if (isAdmin) {
+        navAdmin.hidden = false;
+        navAdmin.style.setProperty('display', 'flex', 'important');
+        navAdmin.classList.add('visible-to-admin');
+      } else {
+        navAdmin.hidden = true;
+        navAdmin.style.setProperty('display', 'none', 'important');
+        navAdmin.classList.remove('visible-to-admin');
+      }
     }
 
     // Team selector dropdown for Admin

@@ -6,6 +6,7 @@
 
 const TaskflowAttendance = {
   clockTimer: null,
+  shiftTimer: null,
   todayData: null,
   presenceMap: {},
 
@@ -96,6 +97,11 @@ const TaskflowAttendance = {
     const isCheckedIn = data.is_checked_in;
     const record = data.current_record;
 
+    if (this.shiftTimer) {
+      clearInterval(this.shiftTimer);
+      this.shiftTimer = null;
+    }
+
     if (btnAction) {
       if (isCheckedIn) {
         btnAction.className = 'checkin-action-btn btn-out';
@@ -116,24 +122,62 @@ const TaskflowAttendance = {
       }
     }
 
-    if (statusText) {
-      if (isCheckedIn) {
-        statusText.textContent = `Active Work Session • Checked in at ${record.formatted_check_in || 'Today'}`;
-        statusText.style.color = 'var(--color-brand-primary)';
-      } else if (record && record.check_out_time) {
-        statusText.textContent = `Completed Work Session • Checked out at ${record.formatted_check_out} (${record.total_hours} hrs)`;
-        statusText.style.color = 'var(--color-text-muted)';
-      } else {
-        statusText.textContent = 'Not Checked In Today';
-        statusText.style.color = 'var(--color-text-muted)';
+    if (isCheckedIn && record) {
+      const checkInTimeStr = record.check_in_time || '';
+      let startMs = Date.now();
+      if (checkInTimeStr) {
+        const parsed = new Date(checkInTimeStr.endsWith('Z') ? checkInTimeStr : checkInTimeStr + 'Z');
+        if (!isNaN(parsed.getTime())) {
+          startMs = parsed.getTime();
+        } else {
+          startMs = Date.now() - ((record.total_hours || 0) * 3600 * 1000);
+        }
       }
-    }
 
-    if (sessionDetails && record) {
-      sessionDetails.innerHTML = `
-        <span>Status: <b>${record.status}</b></span>
-        <span>Today Logged: <b>${record.total_hours} hrs</b></span>
-      `;
+      const updateShiftClock = () => {
+        const elapsedSec = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+        const hrs = String(Math.floor(elapsedSec / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, '0');
+        const secs = String(elapsedSec % 60).padStart(2, '0');
+        const formattedDuration = `${hrs}h ${mins}m ${secs}s`;
+
+        if (statusText) {
+          statusText.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22C55E;margin-right:6px;box-shadow:0 0 8px #22C55E;"></span>Active Shift • In at ${record.formatted_check_in || 'Today'} (${formattedDuration})`;
+          statusText.style.color = 'var(--color-brand-primary)';
+        }
+
+        if (sessionDetails) {
+          sessionDetails.innerHTML = `
+            <span>Status: <b style="color: var(--color-brand-primary);">Active Working</b></span>
+            <span>Live Duration: <b>${formattedDuration}</b></span>
+          `;
+        }
+
+        const mToday = document.getElementById('att-metric-today');
+        if (mToday) {
+          mToday.textContent = `${(elapsedSec / 3600).toFixed(2)} hrs (Live)`;
+        }
+      };
+
+      updateShiftClock();
+      this.shiftTimer = setInterval(updateShiftClock, 1000);
+    } else {
+      if (statusText) {
+        if (record && record.check_out_time) {
+          statusText.textContent = `Completed Work Session • Checked out at ${record.formatted_check_out} (${record.total_hours} hrs)`;
+          statusText.style.color = 'var(--color-text-muted)';
+        } else {
+          statusText.textContent = 'Not Checked In Today';
+          statusText.style.color = 'var(--color-text-muted)';
+        }
+      }
+
+      if (sessionDetails && record) {
+        sessionDetails.innerHTML = `
+          <span>Status: <b>${record.status}</b></span>
+          <span>Today Logged: <b>${record.total_hours} hrs</b></span>
+        `;
+      }
     }
 
     // Update sidebar indicator
@@ -428,6 +472,72 @@ const TaskflowAttendance = {
         wrap.appendChild(indicator);
       }
     });
+  },
+
+  async fetchWorkforceSummary() {
+    const tableBody = document.getElementById('admin-workforce-attendance-body');
+    if (!tableBody) return;
+
+    try {
+      const res = await fetch('/api/attendance/workforce-summary');
+      if (!res.ok) return;
+      const data = await res.json();
+      const workforce = data.workforce || [];
+
+      if (workforce.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="empty" style="text-align: center; padding: 24px;">No workforce records available for today.</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      workforce.forEach(w => {
+        let statusBadge = `<span class="badge gray">Not Checked In</span>`;
+        if (w.is_checked_in) {
+          statusBadge = `<span class="badge green" style="background: rgba(46,125,50,0.15); color: #2E7D32; font-weight: 700;">● Active Working</span>`;
+        } else if (w.is_checked_out) {
+          statusBadge = `<span class="badge blue" style="background: rgba(2,132,199,0.15); color: #0284C7;">Completed Shift</span>`;
+        }
+
+        const hrs = Math.floor(w.active_seconds / 3600);
+        const mins = Math.floor((w.active_seconds % 3600) / 60);
+        const activeDurationStr = w.is_checked_in ? `${hrs}h ${mins}m active` : '—';
+
+        html += `
+          <tr class="interactive-row">
+            <td>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="avatar avatar-sm" style="font-weight: 700; background: var(--color-brand-soft); color: var(--color-brand-primary);">
+                  ${(w.username || 'U').substring(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <strong style="display: block; font-size: 13.5px; color: var(--color-text-primary);">${this.escapeHtml(w.username)}</strong>
+                  <span class="text-sm text-muted" style="font-size: 11px;">${this.escapeHtml(w.email)}</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-badge role-${w.role}">${w.role}</span></td>
+            <td><span class="pill">${this.escapeHtml(w.team_name)}</span></td>
+            <td>${statusBadge}</td>
+            <td style="font-family: monospace; font-size: 12.5px;">
+              <span>IN: <b>${w.check_in_time}</b></span><br>
+              <span style="color: var(--color-text-muted);">OUT: <b>${w.check_out_time}</b></span>
+            </td>
+            <td>
+              <b style="color: var(--color-brand-primary); font-size: 13px;">${w.today_hours} hrs</b>
+              ${w.is_checked_in ? `<br><small style="color: var(--color-text-muted); font-size: 10.5px;">${activeDurationStr}</small>` : ''}
+            </td>
+            <td>
+              <strong style="font-size: 13px;">${w.monthly_hours} hrs</strong>
+              <br><small style="color: var(--color-text-muted); font-size: 10.5px;">${w.working_days} days worked</small>
+            </td>
+          </tr>
+        `;
+      });
+
+      tableBody.innerHTML = html;
+    } catch (err) {
+      console.error('[Attendance] Workforce summary failed:', err);
+    }
   },
 
   escapeHtml(str) {

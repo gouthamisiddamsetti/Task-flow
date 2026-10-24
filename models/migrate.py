@@ -199,6 +199,26 @@ def apply_migrations(db_path):
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_leave_user_team ON leave_requests(user_id, team_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_leave_dates ON leave_requests(start_date, end_date)")
 
+        # Create meetings table if it does not exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS meetings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                team_id INTEGER,
+                host_id INTEGER NOT NULL,
+                scheduled_time DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                duration_minutes INTEGER DEFAULT 30 NOT NULL,
+                status VARCHAR(50) DEFAULT 'Scheduled' NOT NULL,
+                room_id VARCHAR(100) NOT NULL,
+                meeting_link VARCHAR(500),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
+                FOREIGN KEY(host_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_meeting_team_sched ON meetings(team_id, scheduled_time)")
+
         conn.commit()
     except Exception as e:
         conn.rollback()

@@ -214,6 +214,12 @@ body.scroll-locked {
   color: var(--color-role-admin-fg);
 }
 
+.sidebar nav a[hidden],
+.sidebar nav a.hidden,
+#nav-admin:not(.visible-to-admin) {
+  display: none !important;
+}
+
 .sidebar-foot {
   margin-top: auto;
   padding-top: 16px;
@@ -405,20 +411,37 @@ body.scroll-locked {
   user-select: none;
 }
 
-/* Reusable Card Surface */
+/* Reusable Card Surface with interactive hover lift and pointer cursor */
+.card,
+.metric,
+.box,
+.donut-card,
+.mini-calendar-widget,
+.interactive-card {
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s ease;
+}
+
+.card:hover,
+.metric:hover,
+.box:hover,
+.donut-card:hover,
+.mini-calendar-widget:hover,
+.interactive-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.1), 0 6px 12px -4px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-brand-primary, #2E7D32);
+}
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: 20px;
-  transition: box-shadow var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
   position: relative;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-border-strong);
 }
 
 .card-h {

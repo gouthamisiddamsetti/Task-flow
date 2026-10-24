@@ -217,6 +217,71 @@ leaves_bp = Blueprint("leaves", __name__)
 # LEAVE MANAGEMENT ENDPOINTS
 # ==============================================================================
 
+@attendance_bp.get("/workforce-summary")
+@login_required
+def get_workforce_summary():
+    """
+    Admin/Lead endpoint: Returns live attendance, active shifts, and total logged hours
+    for all employees across squads.
+    """
+    user_id = session.get("user_id")
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify(error="Authentication required."), 401
+
+    is_lead_or_admin = user.role in ("Admin", "Lead") or user.is_admin
+    if not is_lead_or_admin:
+        return jsonify(error="Forbidden. Admin or Team Lead privileges required."), 403
+
+    today_str = get_today_str()
+    current_month_prefix = today_str[:7]
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    query = User.query
+    if user.role == "Lead" and not user.is_admin and user.team_id:
+        query = query.filter_by(team_id=user.team_id)
+
+    users = query.order_by(User.role.asc(), User.username.asc()).all()
+    summary = []
+
+    for u in users:
+        rec = AttendanceRecord.query.filter_by(user_id=u.id, date=today_str).first()
+        is_checked_in = bool(rec and rec.check_in_time and not rec.check_out_time)
+        is_checked_out = bool(rec and rec.check_out_time)
+
+        active_seconds = 0
+        if is_checked_in and rec.check_in_time:
+            active_seconds = int(max(0, (now_utc - rec.check_in_time).total_seconds()))
+
+        monthly_records = AttendanceRecord.query.filter(
+            AttendanceRecord.user_id == u.id,
+            AttendanceRecord.date.like(f"{current_month_prefix}%")
+        ).all()
+        monthly_hours = round(sum(r.total_hours for r in monthly_records), 2)
+        working_days = len([r for r in monthly_records if r.check_in_time])
+
+        status_label = "Active Working" if is_checked_in else ("Completed Shift" if is_checked_out else "Not Checked In")
+
+        summary.append({
+            "user_id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "role": u.role,
+            "team_id": u.team_id,
+            "team_name": u.team.name if u.team else "Unassigned",
+            "is_checked_in": is_checked_in,
+            "is_checked_out": is_checked_out,
+            "status": status_label,
+            "check_in_time": rec.check_in_time.strftime("%I:%M %p") if rec and rec.check_in_time else "—",
+            "check_out_time": rec.check_out_time.strftime("%I:%M %p") if rec and rec.check_out_time else "—",
+            "active_seconds": active_seconds,
+            "today_hours": rec.total_hours if rec else 0.0,
+            "monthly_hours": monthly_hours,
+            "working_days": working_days
+        })
+
+    return jsonify(workforce=summary, count=len(summary), date=today_str), 200
+
 @leaves_bp.post("/apply")
 @login_required
 def apply_leave():
