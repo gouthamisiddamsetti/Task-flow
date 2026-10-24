@@ -88,9 +88,18 @@ const TaskflowAuth = {
 
     const avatarEl = document.getElementById('user-avatar');
     if (avatarEl) {
-      const initials = (user.username || user.name || 'U').substring(0, 2).toUpperCase();
-      avatarEl.textContent = initials;
-      avatarEl.title = `${user.username || user.name} (${user.email})`;
+      if (user.avatar_url) {
+        avatarEl.innerHTML = `<img src="${user.avatar_url}" alt="${this.escapeHtml(user.name || user.username)}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">`;
+      } else {
+        const initials = (user.username || user.name || 'U').substring(0, 2).toUpperCase();
+        avatarEl.textContent = initials;
+      }
+      avatarEl.title = `${user.username || user.name} (${user.email}) — Click for Profile & Settings`;
+      avatarEl.onclick = () => {
+        if (window.TaskflowDashboard) {
+          window.TaskflowDashboard.switchView('settings');
+        }
+      };
     }
 
     // Apply user theme preference
@@ -125,6 +134,16 @@ const TaskflowAuth = {
     if (teamFilterWrap) {
       teamFilterWrap.style.display = isAdmin ? 'block' : 'none';
     }
+  },
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 };
 

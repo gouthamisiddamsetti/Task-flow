@@ -86,6 +86,10 @@ def apply_migrations(db_path):
                 cursor.execute("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'Member' NOT NULL")
             if "team_id" not in user_cols:
                 cursor.execute("ALTER TABLE users ADD COLUMN team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL")
+            if "avatar_url" not in user_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(300)")
+            if "bio" not in user_cols:
+                cursor.execute("ALTER TABLE users ADD COLUMN bio VARCHAR(255)")
 
         # Check tasks table columns if table exists
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'")

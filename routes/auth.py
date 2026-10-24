@@ -119,10 +119,13 @@ def me():
         return jsonify(error="Authentication required"), 401
     return jsonify(user=user.to_dict()), 200
 
+AVATARS_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "uploads", "avatars")
+os.makedirs(AVATARS_FOLDER, exist_ok=True)
+
 @auth_bp.put("/profile")
 @login_required
 def update_profile():
-    """Update profile details (name, theme preference)."""
+    """Update profile details (name, theme preference, bio)."""
     user = db.session.get(User, session["user_id"])
     data = request.get_json(silent=True) or {}
 
@@ -130,12 +133,49 @@ def update_profile():
     if name:
         user.name = name[:80]
 
+    bio = data.get("bio")
+    if bio is not None:
+        user.bio = str(bio).strip()[:255]
+
     theme = (data.get("theme_preference") or "").strip().lower()
-    if theme in ("light", "dark"):
+    if theme in ("light", "dark", "midnight", "emerald", "cyber"):
         user.theme_preference = theme
+
+    if "avatar_url" in data and data["avatar_url"] is not None:
+        user.avatar_url = str(data["avatar_url"]).strip()[:300]
 
     db.session.commit()
     return jsonify(user=user.to_dict(), message="Profile updated successfully."), 200
+
+@auth_bp.post("/avatar")
+@login_required
+def upload_avatar():
+    """Upload user avatar photo."""
+    user = db.session.get(User, session["user_id"])
+    if not user:
+        return jsonify(error="User not found."), 404
+
+    if "avatar" not in request.files:
+        return jsonify(error="No avatar file uploaded."), 400
+
+    file = request.files["avatar"]
+    if not file or not file.filename:
+        return jsonify(error="No file selected."), 400
+
+    allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in allowed_exts:
+        return jsonify(error="Invalid image format. Supported formats: JPG, PNG, WEBP, SVG, GIF."), 400
+
+    from werkzeug.utils import secure_filename
+    import time
+    filename = secure_filename(f"user_{user.id}_{int(time.time())}{ext}")
+    file_path = os.path.join(AVATARS_FOLDER, filename)
+    file.save(file_path)
+
+    user.avatar_url = f"/static/uploads/avatars/{filename}"
+    db.session.commit()
+    return jsonify(user=user.to_dict(), avatar_url=user.avatar_url, message="Profile picture updated successfully."), 200
 
 @auth_bp.put("/password")
 @login_required

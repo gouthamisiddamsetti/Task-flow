@@ -75,6 +75,17 @@ def create_app(config_class=Config):
             teams = []
         return render_template("login.html", teams=teams)
 
+    @app.route("/admin/login")
+    def admin_login_page():
+        user_id = session.get("user_id")
+        if user_id:
+            from models import User
+            user = db.session.get(User, user_id)
+            if user and (user.is_admin or user.role == "Admin"):
+                return redirect(url_for("index"))
+            session.clear()
+        return render_template("admin_login.html")
+
     @app.route("/dashboard")
     def dashboard():
         return redirect(url_for("index"))

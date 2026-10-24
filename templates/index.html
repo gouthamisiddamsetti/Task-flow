@@ -242,6 +242,24 @@
           </div>
         </div>
 
+        <!-- Interactive Workspace Analytics & Velocity Graphs -->
+        <div class="overview-charts-card interactive-card">
+          <div class="charts-header">
+            <div>
+              <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--color-text-primary);">Workspace Analytics & Velocity</h3>
+              <p class="card-sub" style="margin: 2px 0 0;">Visual sprint metrics, category distribution, and 7-day completion velocity</p>
+            </div>
+            <div class="chart-tabs-nav">
+              <button type="button" class="chart-tab-pill active" data-chart="velocity">📊 Velocity</button>
+              <button type="button" class="chart-tab-pill" data-chart="category">🍩 Categories</button>
+              <button type="button" class="chart-tab-pill" data-chart="trend">📈 7-Day Trend</button>
+            </div>
+          </div>
+          <div class="chart-canvas-box">
+            <canvas id="overview-analytics-canvas"></canvas>
+          </div>
+        </div>
+
         <!-- 4. ACTION BAR & FILTERS -->
         <div class="card tasks-card" style="margin-top: 20px;">
           <div class="filters">
@@ -423,44 +441,105 @@
         </div>
       </section>
 
-      <!-- VIEW 7: SETTINGS VIEW -->
+      <!-- VIEW 7: SETTINGS & PROFILE VIEW -->
       <section data-view="settings" hidden>
-        <div class="card" style="max-width: 680px;">
+        <div class="card interactive-card" style="max-width: 720px;">
           <div class="card-h">
             <div>
-              <h3>Account & Preferences</h3>
-              <p class="card-sub">Configure user profile, visual theme tokens, and system preferences.</p>
+              <h3>Profile & System Preferences</h3>
+              <p class="card-sub">Manage your user profile photo, engineering bio, color palettes, and security credentials.</p>
             </div>
           </div>
 
-          <form id="settings-form" style="display: grid; gap: 16px; margin-top: 16px;" onsubmit="event.preventDefault(); window.TaskflowDashboard.saveSettings();">
-            <div class="settings-profile-head" style="display: flex; align-items: center; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border);">
-              <div class="avatar avatar-lg" id="settings-avatar-preview" style="width: 52px; height: 52px; font-size: 20px;">U</div>
-              <div>
-                <h4 id="settings-display-name" style="margin: 0 0 4px; font-size: 17px;">User</h4>
-                <div style="display: flex; gap: 8px; align-items: center;">
+          <!-- Hidden file input for Avatar upload -->
+          <input type="file" id="settings-avatar-file" accept="image/*" style="display: none;" onchange="if(this.files && this.files[0]) window.TaskflowDashboard.uploadAvatar(this.files[0])">
+
+          <form id="settings-form" style="display: grid; gap: 18px; margin-top: 16px;" onsubmit="event.preventDefault(); window.TaskflowDashboard.saveSettings();">
+            <div class="settings-profile-head" style="display: flex; align-items: center; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--color-border);">
+              <div class="profile-avatar-uploader" id="settings-avatar-container" onclick="document.getElementById('settings-avatar-file').click()" title="Click to upload profile photo">
+                <div class="profile-avatar-fallback">U</div>
+                <div class="profile-avatar-hover-overlay">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <span>Upload</span>
+                </div>
+              </div>
+              <div style="flex: 1;">
+                <h4 id="settings-display-name" style="margin: 0 0 6px; font-size: 18px; color: var(--color-text-primary);">User</h4>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                   <span class="role-badge" id="settings-role-badge">Member</span>
                   <span class="text-sm text-muted" id="settings-team-badge">No Squad</span>
                 </div>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('settings-avatar-file').click()" style="font-size: 12px; padding: 4px 10px;">
+                  📷 Upload New Photo
+                </button>
               </div>
             </div>
 
-            <label>Full Name
-              <input type="text" id="settings-name" required placeholder="Your full name">
-            </label>
-
-            <label>Email Address (Account Identifier)
-              <input type="email" id="settings-email" readonly disabled style="opacity: 0.75; cursor: not-allowed;">
-            </label>
-
             <div class="row">
-              <label>Theme Preference
-                <select id="settings-theme">
-                  <option value="light">Enterprise Light Mode</option>
-                  <option value="dark">Dark Theme (Midnight Code)</option>
-                </select>
+              <label>Full Name
+                <input type="text" id="settings-name" required placeholder="Your full name">
               </label>
 
+              <label>Email Address (Account Identifier)
+                <input type="email" id="settings-email" readonly disabled style="opacity: 0.75; cursor: not-allowed;">
+              </label>
+            </div>
+
+            <label>Professional Bio / Role Headline
+              <textarea id="settings-bio" rows="2" placeholder="e.g. Senior Full-Stack Engineer specializing in resilient distributed systems & API scalability"></textarea>
+            </label>
+
+            <!-- Theme Visual Selection Cards -->
+            <div>
+              <strong style="display: block; font-size: 13px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px;">Visual Theme & Color Accent</strong>
+              <div class="theme-cards-grid">
+                <div class="theme-choice-card" data-theme-name="light" onclick="window.TaskflowDashboard.selectTheme('light')">
+                  <div class="theme-swatch" style="border: 1px solid #E5E7EB;">
+                    <span style="background: #F8F9FA;"></span>
+                    <span style="background: #2E7D32;"></span>
+                  </div>
+                  <strong style="font-size: 12px;">Light</strong>
+                </div>
+
+                <div class="theme-choice-card" data-theme-name="dark" onclick="window.TaskflowDashboard.selectTheme('dark')">
+                  <div class="theme-swatch" style="border: 1px solid #334155;">
+                    <span style="background: #0F172A;"></span>
+                    <span style="background: #4ADE80;"></span>
+                  </div>
+                  <strong style="font-size: 12px;">Dark</strong>
+                </div>
+
+                <div class="theme-choice-card" data-theme-name="midnight" onclick="window.TaskflowDashboard.selectTheme('midnight')">
+                  <div class="theme-swatch" style="border: 1px solid #1E2C48;">
+                    <span style="background: #0A0F1D;"></span>
+                    <span style="background: #38BDF8;"></span>
+                  </div>
+                  <strong style="font-size: 12px;">Midnight</strong>
+                </div>
+
+                <div class="theme-choice-card" data-theme-name="emerald" onclick="window.TaskflowDashboard.selectTheme('emerald')">
+                  <div class="theme-swatch" style="border: 1px solid #164E3A;">
+                    <span style="background: #051811;"></span>
+                    <span style="background: #10B981;"></span>
+                  </div>
+                  <strong style="font-size: 12px;">Emerald</strong>
+                </div>
+
+                <div class="theme-choice-card" data-theme-name="cyber" onclick="window.TaskflowDashboard.selectTheme('cyber')">
+                  <div class="theme-swatch" style="border: 1px solid #312356;">
+                    <span style="background: #0D091A;"></span>
+                    <span style="background: #A855F7;"></span>
+                  </div>
+                  <strong style="font-size: 12px;">Cyber</strong>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme" value="light">
+            </div>
+
+            <div class="row">
               <label>Assigned Squad
                 <input type="text" id="settings-squad-display" readonly disabled style="opacity: 0.75; cursor: not-allowed;">
               </label>
@@ -480,7 +559,7 @@
 
             <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
               <button type="submit" class="btn primary" id="btn-save-settings">
-                Save Preferences
+                Save Profile & Preferences
               </button>
               <span id="settings-status-msg" style="font-size: 13px; color: var(--color-brand-primary); font-weight: 600; display: none;">Saved successfully!</span>
             </div>
@@ -1025,6 +1104,63 @@
     </form>
   </dialog>
 
+  <!-- 8. FLOATING AI CORNER COPILOT WIDGET (BOTTOM-RIGHT) -->
+  <div class="ai-fab-container">
+    <button class="ai-fab-btn" id="ai-fab-launcher" title="Open AI Productivity Copilot" aria-label="Open AI Copilot">
+      <div class="ai-fab-glow"></div>
+      <svg class="ai-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm1 14.93V17a1 1 0 01-2 0v-.07A7 7 0 015.07 11H5a1 1 0 010-2h.07A7 7 0 0111 5.07V5a1 1 0 012 0v.07A7 7 0 0118.93 11H19a1 1 0 010 2h-.07A7 7 0 0113 16.93z"/>
+      </svg>
+      <span class="ai-fab-badge">AI</span>
+    </button>
+  </div>
+
+  <div class="ai-corner-widget" id="ai-corner-widget">
+    <div class="ai-corner-head">
+      <div class="ai-corner-title-group">
+        <span class="ai-status-indicator" title="Online"></span>
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-primary)" stroke-width="2">
+            <path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm1 14.93V17a1 1 0 01-2 0v-.07A7 7 0 015.07 11H5a1 1 0 010-2h.07A7 7 0 0111 5.07V5a1 1 0 012 0v.07A7 7 0 0118.93 11H19a1 1 0 010 2h-.07A7 7 0 0113 16.93z"/>
+          </svg>
+          Taskflow Copilot
+        </h4>
+      </div>
+      <div class="ai-corner-actions">
+        <button type="button" class="ai-btn-tool" id="btn-copy-corner-ai" title="Copy response to clipboard">📋</button>
+        <button type="button" class="ai-btn-tool" id="btn-clear-corner-ai" title="Clear conversation">🗑️</button>
+        <button type="button" class="ai-btn-tool" id="btn-min-corner-ai" title="Minimize window">_</button>
+        <button type="button" class="ai-btn-tool" id="btn-close-corner-ai" title="Close window">✕</button>
+      </div>
+    </div>
+
+    <!-- Pre-configured Query Quick Chips in Corner -->
+    <div style="padding: 10px 14px 6px; display: flex; flex-wrap: wrap; gap: 6px; background: var(--color-surface); border-bottom: 1px solid var(--color-border-subtle);">
+      <button type="button" class="assistant-chip corner-assistant-chip" data-query="Which tasks are overdue?">⚠️ Overdue tasks?</button>
+      <button type="button" class="assistant-chip corner-assistant-chip" data-query="Summarize our team's progress.">📊 Team progress</button>
+      <button type="button" class="assistant-chip corner-assistant-chip" data-query="Draft a weekly status report.">📋 Status report</button>
+      <button type="button" class="assistant-chip corner-assistant-chip" data-query="Break this deliverable into smaller subtasks.">🔨 Break into subtasks</button>
+    </div>
+
+    <div class="ai-corner-body" id="corner-chat-stream">
+      <div class="ai-bubble-bot">
+        👋 Hi there! I'm your Taskflow Copilot. Ask me about sprint velocity, risk blockers, delivery forecasts, or task decompositions.
+      </div>
+    </div>
+
+    <div class="ai-corner-footer">
+      <form class="ai-form-corner" id="corner-assistant-form">
+        <input type="text" class="ai-input-corner" id="corner-assistant-input" placeholder="Ask Copilot anything..." autocomplete="off">
+        <button type="submit" class="ai-send-btn" title="Send query">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- SOCKET.IO REALTIME CLIENT ENGINE -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
@@ -1050,7 +1186,7 @@
       window.TaskflowAuth.updateTopBar(user);
 
       // 2. Initialize Navigation Tabs & Dashboard Widgets
-      window.TaskflowDashboard.initTabs();
+      window.TaskflowDashboard.init();
       await window.TaskflowDashboard.fetchStats();
 
       // 3. Initialize Tasks & AI Assistant

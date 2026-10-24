@@ -54,6 +54,7 @@ def ensure_seed_data():
 
     for d in demos:
         u = User.query.filter_by(email=d["email"]).first()
+        target_pw = "Admin@123" if d["role"] == "Admin" else "password123"
         if not u:
             u = User(
                 username=d["username"],
@@ -62,11 +63,11 @@ def ensure_seed_data():
                 is_admin=d["is_admin"],
                 team_id=d["team_id"]
             )
-            u.set_password("password123")
+            u.set_password(target_pw)
             db.session.add(u)
         else:
-            if not u.check_password("password123"):
-                u.set_password("password123")
+            if not u.check_password(target_pw):
+                u.set_password(target_pw)
             u.role = d["role"]
             u.is_admin = d["is_admin"]
             if d["team_id"] is not None and u.team_id != d["team_id"]:
@@ -273,7 +274,7 @@ def seed_database(force_reset=False):
         print("[OK] Database successfully seeded with:")
         print("   - 2 Teams ('Backend Systems', 'Frontend Core')")
         print("   - 4 Demo Users:")
-        print("     * admin@taskflow.local (Admin, password: password123)")
+        print("     * admin@taskflow.local (Admin, password: Admin@123)")
         print("     * lead_backend@taskflow.local (Lead, password: password123)")
         print("     * dev_backend@taskflow.local (Member, password: password123)")
         print("     * dev_frontend@taskflow.local (Member, password: password123)")

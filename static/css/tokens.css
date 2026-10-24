@@ -273,3 +273,105 @@
 
   --shadow-rgb:              0 0 0;
 }
+
+/* ==========================================================================
+   MIDNIGHT OBSIDIAN THEME (data-theme="midnight")
+   ========================================================================== */
+[data-theme="midnight"] {
+  --color-canvas-bg:         #0A0F1D;
+  --color-canvas-subtle:     #111827;
+  --color-canvas-inset:      #070B14;
+  --color-surface:           #131D31;
+  --color-surface-hover:     #1E2C48;
+  --color-surface-active:    #26385C;
+  --color-surface-selected:  #0C324A;
+
+  --color-text-primary:      #F0F6FC;
+  --color-text-secondary:    #94A3B8;
+  --color-text-muted:        #64748B;
+  --color-text-subtle:       #475569;
+  --color-text-inverse:      #0A0F1D;
+  --color-text-disabled:     #334155;
+
+  --color-border:            #1E2C48;
+  --color-border-subtle:     #152037;
+  --color-border-strong:     #2D4268;
+  --color-border-focus:      #38BDF8;
+
+  --color-brand-primary:     #38BDF8;
+  --color-brand-hover:       #0EA5E9;
+  --color-brand-active:      #0284C7;
+  --color-brand-soft:        rgba(56, 189, 248, 0.14);
+  --color-brand-border:      rgba(56, 189, 248, 0.35);
+  --color-brand-glow:        rgba(56, 189, 248, 0.28);
+
+  --shadow-rgb:              0 0 0;
+}
+
+/* ==========================================================================
+   EMERALD JADE THEME (data-theme="emerald")
+   ========================================================================== */
+[data-theme="emerald"] {
+  --color-canvas-bg:         #051811;
+  --color-canvas-subtle:     #0A261C;
+  --color-canvas-inset:      #03100B;
+  --color-surface:           #0C2E22;
+  --color-surface-hover:     #134332;
+  --color-surface-active:    #195741;
+  --color-surface-selected:  #0A3826;
+
+  --color-text-primary:      #ECFDF5;
+  --color-text-secondary:    #A7F3D0;
+  --color-text-muted:        #6EE7B7;
+  --color-text-subtle:       #34D399;
+  --color-text-inverse:      #051811;
+  --color-text-disabled:     #1B4D3E;
+
+  --color-border:            #164E3A;
+  --color-border-subtle:     #0E3829;
+  --color-border-strong:     #1E6B50;
+  --color-border-focus:      #10B981;
+
+  --color-brand-primary:     #10B981;
+  --color-brand-hover:       #059669;
+  --color-brand-active:      #047857;
+  --color-brand-soft:        rgba(16, 185, 129, 0.16);
+  --color-brand-border:      rgba(16, 185, 129, 0.40);
+  --color-brand-glow:        rgba(16, 185, 129, 0.32);
+
+  --shadow-rgb:              0 0 0;
+}
+
+/* ==========================================================================
+   CYBER SYNTHWAVE THEME (data-theme="cyber")
+   ========================================================================== */
+[data-theme="cyber"] {
+  --color-canvas-bg:         #0D091A;
+  --color-canvas-subtle:     #18102C;
+  --color-canvas-inset:      #080511;
+  --color-surface:           #1E1438;
+  --color-surface-hover:     #2B1D4F;
+  --color-surface-active:    #3A276A;
+  --color-surface-selected:  #341B5C;
+
+  --color-text-primary:      #F5F3FF;
+  --color-text-secondary:    #DDD6FE;
+  --color-text-muted:        #A78BFA;
+  --color-text-subtle:       #7C3AED;
+  --color-text-inverse:      #0D091A;
+  --color-text-disabled:     #4C1D95;
+
+  --color-border:            #312356;
+  --color-border-subtle:     #23173F;
+  --color-border-strong:     #4C3580;
+  --color-border-focus:      #C084FC;
+
+  --color-brand-primary:     #A855F7;
+  --color-brand-hover:       #9333EA;
+  --color-brand-active:      #7E22CE;
+  --color-brand-soft:        rgba(168, 85, 247, 0.16);
+  --color-brand-border:      rgba(168, 85, 247, 0.40);
+  --color-brand-glow:        rgba(168, 85, 247, 0.32);
+
+  --shadow-rgb:              0 0 0;
+}

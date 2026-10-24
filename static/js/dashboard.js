@@ -6,6 +6,60 @@
 const TaskflowDashboard = {
   activeView: 'overview',
   statsData: null,
+  activeChartTab: 'velocity',
+
+  init() {
+    this.initTabs();
+    this.initCursorSpotlight();
+    this.initChartTabs();
+  },
+
+  initCursorSpotlight() {
+    document.addEventListener('mousemove', (e) => {
+      const targetCard = e.target.closest('.interactive-card, .metric, .cat-card, .donut-card, .ai-assistant-card');
+      if (!targetCard) return;
+
+      const rect = targetCard.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      targetCard.style.setProperty('--mouse-x', `${x}px`);
+      targetCard.style.setProperty('--mouse-y', `${y}px`);
+
+      // Gentle interactive 3D tilt
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = ((y - centerY) / centerY) * -3.5;
+      const rotateY = ((x - centerX) / centerX) * 3.5;
+      targetCard.style.transform = `perspective(800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-2px)`;
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const targetCard = e.target.closest('.interactive-card, .metric, .cat-card, .donut-card, .ai-assistant-card');
+      if (targetCard && (!e.relatedTarget || !targetCard.contains(e.relatedTarget))) {
+        targetCard.style.transform = '';
+      }
+    });
+  },
+
+  initChartTabs() {
+    const tabs = document.querySelectorAll('.chart-tab-pill');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this.activeChartTab = tab.getAttribute('data-chart') || 'velocity';
+        this.renderOverviewCharts();
+      });
+    });
+
+    // Redraw on window resize
+    window.addEventListener('resize', () => {
+      if (this.activeView === 'overview') {
+        this.renderOverviewCharts();
+      }
+    });
+  },
 
   async fetchStats(teamId = null) {
     try {
@@ -16,6 +70,7 @@ const TaskflowDashboard = {
       this.statsData = data;
       this.renderMetrics(data);
       this.renderDonutChart(data);
+      this.renderOverviewCharts();
       return data;
     } catch (err) {
       console.error('Failed to fetch stats:', err);
@@ -427,6 +482,273 @@ const TaskflowDashboard = {
     }
   },
 
+  renderOverviewCharts() {
+    const canvas = document.getElementById('overview-analytics-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Handle high DPI display scaling
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || 680;
+    const height = rect.height || 240;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (this.activeChartTab === 'velocity') {
+      this.drawVelocityChart(ctx, width, height);
+    } else if (this.activeChartTab === 'category') {
+      this.drawCategoryChart(ctx, width, height);
+    } else if (this.activeChartTab === 'trend') {
+      this.drawTrendChart(ctx, width, height);
+    }
+  },
+
+  drawVelocityChart(ctx, width, height) {
+    const stats = this.statsData || { completed: 8, in_progress: 5, in_review: 3, overdue: 2, total: 18 };
+    const items = [
+      { label: 'Completed', val: stats.completed || 0, colorStart: '#10B981', colorEnd: '#059669' },
+      { label: 'In Progress', val: stats.in_progress || 0, colorStart: '#0284C7', colorEnd: '#0369A1' },
+      { label: 'In Review', val: stats.in_review || 0, colorStart: '#A855F7', colorEnd: '#7E22CE' },
+      { label: 'Overdue Risk', val: stats.overdue || 0, colorStart: '#EF4444', colorEnd: '#DC2626' }
+    ];
+
+    const maxVal = Math.max(...items.map(i => i.val), 5);
+    const padding = { top: 30, right: 30, bottom: 40, left: 50 };
+    const chartW = width - padding.left - padding.right;
+    const chartH = height - padding.top - padding.bottom;
+
+    // Background horizontal grid lines
+    ctx.strokeStyle = 'rgba(150, 150, 150, 0.15)';
+    ctx.lineWidth = 1;
+    const gridSteps = 4;
+    for (let i = 0; i <= gridSteps; i++) {
+      const y = padding.top + (chartH / gridSteps) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+
+      const stepVal = Math.round(maxVal - (maxVal / gridSteps) * i);
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.7)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(stepVal.toString(), padding.left - 10, y + 4);
+    }
+
+    // Draw bars
+    const barWidth = Math.min(54, (chartW / items.length) * 0.55);
+    const spacing = chartW / items.length;
+
+    items.forEach((item, idx) => {
+      const barH = (item.val / maxVal) * chartH;
+      const x = padding.left + spacing * idx + (spacing - barWidth) / 2;
+      const y = padding.top + chartH - barH;
+
+      // Gradient fill
+      const grad = ctx.createLinearGradient(x, y, x, y + barH);
+      grad.addColorStop(0, item.colorStart);
+      grad.addColorStop(1, item.colorEnd);
+
+      ctx.fillStyle = grad;
+      // Rounded top bar
+      const radius = 6;
+      ctx.beginPath();
+      ctx.moveTo(x, y + barH);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.lineTo(x + barWidth - radius, y);
+      ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
+      ctx.lineTo(x + barWidth, y + barH);
+      ctx.closePath();
+      ctx.fill();
+
+      // Top count label
+      ctx.fillStyle = item.colorStart;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.val.toString(), x + barWidth / 2, y - 8);
+
+      // Bottom category label
+      ctx.fillStyle = 'rgba(140, 140, 150, 0.9)';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(item.label, x + barWidth / 2, padding.top + chartH + 20);
+    });
+  },
+
+  drawCategoryChart(ctx, width, height) {
+    const tasks = window.TaskflowTasks?.allTasks || [];
+    const catMap = { Frontend: 0, Backend: 0, Database: 0, Design: 0, Meetings: 0 };
+    tasks.forEach(t => {
+      const cat = t.category || 'Backend';
+      catMap[cat] = (catMap[cat] || 0) + 1;
+    });
+
+    const categories = [
+      { name: 'Backend', count: catMap.Backend || 1, color: '#8B5CF6' },
+      { name: 'Frontend', count: catMap.Frontend || 1, color: '#0EA5E9' },
+      { name: 'Database', count: catMap.Database || 1, color: '#10B981' },
+      { name: 'Design', count: catMap.Design || 1, color: '#EC4899' },
+      { name: 'Meetings', count: catMap.Meetings || 1, color: '#F59E0B' }
+    ];
+
+    const total = categories.reduce((sum, c) => sum + c.count, 0) || 1;
+    const centerX = width * 0.38;
+    const centerY = height * 0.5;
+    const outerRadius = Math.min(centerX, centerY) - 20;
+    const innerRadius = outerRadius * 0.58;
+
+    let startAngle = -Math.PI / 2;
+
+    categories.forEach(cat => {
+      const sliceAngle = (cat.count / total) * (Math.PI * 2);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, outerRadius, startAngle, startAngle + sliceAngle);
+      ctx.arc(centerX, centerY, innerRadius, startAngle + sliceAngle, startAngle, true);
+      ctx.closePath();
+      ctx.fillStyle = cat.color;
+      ctx.fill();
+      startAngle += sliceAngle;
+    });
+
+    // Center metric
+    ctx.fillStyle = 'rgba(150, 150, 150, 0.9)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Total Tasks', centerX, centerY - 6);
+
+    ctx.fillStyle = '#10B981';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(total.toString(), centerX, centerY + 18);
+
+    // Right Legend
+    const legendX = width * 0.65;
+    let legendY = height * 0.22;
+    categories.forEach(cat => {
+      const pct = Math.round((cat.count / total) * 100);
+      ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      ctx.arc(legendX, legendY, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.9)';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${cat.name} (${cat.count} • ${pct}%)`, legendX + 14, legendY + 4);
+      legendY += 28;
+    });
+  },
+
+  drawTrendChart(ctx, width, height) {
+    const padding = { top: 30, right: 30, bottom: 40, left: 45 };
+    const chartW = width - padding.left - padding.right;
+    const chartH = height - padding.top - padding.bottom;
+
+    // Past 7 days data
+    const days = [];
+    const points = [2, 5, 4, 7, 6, 9, 8];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+    }
+
+    const maxVal = Math.max(...points, 10);
+
+    // Background horizontal grid
+    ctx.strokeStyle = 'rgba(150, 150, 150, 0.15)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = padding.top + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, y);
+      ctx.lineTo(width - padding.right, y);
+      ctx.stroke();
+    }
+
+    // Calculate coordinate points
+    const stepX = chartW / (points.length - 1);
+    const coords = points.map((val, idx) => ({
+      x: padding.left + stepX * idx,
+      y: padding.top + chartH - (val / maxVal) * chartH
+    }));
+
+    // Area Gradient Fill
+    const areaGrad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
+    areaGrad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+    areaGrad.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
+
+    ctx.beginPath();
+    ctx.moveTo(coords[0].x, padding.top + chartH);
+    coords.forEach(pt => ctx.lineTo(pt.x, pt.y));
+    ctx.lineTo(coords[coords.length - 1].x, padding.top + chartH);
+    ctx.closePath();
+    ctx.fillStyle = areaGrad;
+    ctx.fill();
+
+    // Curved Line Stroke
+    ctx.strokeStyle = '#10B981';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(coords[0].x, coords[0].y);
+    for (let i = 0; i < coords.length - 1; i++) {
+      const xc = (coords[i].x + coords[i + 1].x) / 2;
+      const yc = (coords[i].y + coords[i + 1].y) / 2;
+      ctx.quadraticCurveTo(coords[i].x, coords[i].y, xc, yc);
+    }
+    ctx.lineTo(coords[coords.length - 1].x, coords[coords.length - 1].y);
+    ctx.stroke();
+
+    // Data points & day labels
+    coords.forEach((pt, idx) => {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = '#10B981';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.9)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(days[idx], pt.x, padding.top + chartH + 20);
+    });
+  },
+
+  async uploadAvatar(file) {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch('/api/auth/avatar', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to upload profile picture.');
+        return;
+      }
+
+      if (window.TaskflowAuth) {
+        window.TaskflowAuth.currentUser = data.user;
+        window.TaskflowAuth.updateTopBar(data.user);
+      }
+      this.renderSettingsView();
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      alert('Network error while uploading profile photo.');
+    }
+  },
+
   async renderSettingsView() {
     let user = window.TaskflowAuth?.currentUser;
     if (!user) {
@@ -436,16 +758,18 @@ const TaskflowDashboard = {
 
     const nameInput = document.getElementById('settings-name');
     const emailInput = document.getElementById('settings-email');
+    const bioInput = document.getElementById('settings-bio');
     const themeSelect = document.getElementById('settings-theme');
     const displayName = document.getElementById('settings-display-name');
     const roleBadge = document.getElementById('settings-role-badge');
     const teamBadge = document.getElementById('settings-team-badge');
     const squadDisplay = document.getElementById('settings-squad-display');
-    const avatarPreview = document.getElementById('settings-avatar-preview');
+    const avatarContainer = document.getElementById('settings-avatar-container');
 
     const nameVal = user.name || user.username || '';
     if (nameInput) nameInput.value = nameVal;
     if (emailInput) emailInput.value = user.email || '';
+    if (bioInput) bioInput.value = user.bio || '';
     if (themeSelect) themeSelect.value = user.theme_preference || 'light';
     if (displayName) displayName.textContent = nameVal;
     if (roleBadge) {
@@ -454,18 +778,52 @@ const TaskflowDashboard = {
     }
     if (teamBadge) teamBadge.textContent = user.team_name ? `Squad: ${user.team_name}` : 'Unassigned Squad';
     if (squadDisplay) squadDisplay.value = user.team_name || 'Unassigned Squad';
-    if (avatarPreview) {
-      avatarPreview.textContent = (nameVal || 'U').substring(0, 2).toUpperCase();
+
+    if (avatarContainer) {
+      if (user.avatar_url) {
+        avatarContainer.innerHTML = `<img src="${user.avatar_url}" class="profile-avatar-img" alt="Profile">`;
+      } else {
+        const initials = (nameVal || 'U').substring(0, 2).toUpperCase();
+        avatarContainer.innerHTML = `<div class="profile-avatar-fallback">${initials}</div>`;
+      }
     }
+
+    // Highlight selected theme card
+    const currentTheme = user.theme_preference || 'light';
+    document.querySelectorAll('.theme-choice-card').forEach(card => {
+      if (card.getAttribute('data-theme-name') === currentTheme) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+  },
+
+  selectTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem('taskflow_theme', themeName);
+
+    const themeSelect = document.getElementById('settings-theme');
+    if (themeSelect) themeSelect.value = themeName;
+
+    document.querySelectorAll('.theme-choice-card').forEach(card => {
+      if (card.getAttribute('data-theme-name') === themeName) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
   },
 
   async saveSettings() {
     const nameInput = document.getElementById('settings-name');
+    const bioInput = document.getElementById('settings-bio');
     const themeSelect = document.getElementById('settings-theme');
     const statusMsg = document.getElementById('settings-status-msg');
     const saveBtn = document.getElementById('btn-save-settings');
 
     const newName = nameInput?.value.trim();
+    const newBio = bioInput?.value.trim();
     const newTheme = themeSelect?.value || 'light';
 
     if (!newName) {
@@ -481,6 +839,7 @@ const TaskflowDashboard = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newName,
+          bio: newBio,
           theme_preference: newTheme
         })
       });
@@ -508,7 +867,7 @@ const TaskflowDashboard = {
       if (statusMsg) {
         statusMsg.style.display = 'inline';
         statusMsg.style.color = 'var(--color-brand-primary)';
-        statusMsg.textContent = 'Preferences saved successfully!';
+        statusMsg.textContent = 'Profile preferences updated successfully!';
         setTimeout(() => {
           statusMsg.style.display = 'none';
         }, 3000);

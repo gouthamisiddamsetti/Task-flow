@@ -51,12 +51,6 @@
           ⚡ Quick 1-Click Demo Logins
         </span>
         <div class="persona-cards-grid">
-          <div class="persona-card" onclick="quickLogin('admin@taskflow.local')">
-            <span class="persona-role">👑 Admin</span>
-            <span class="persona-name">System Administrator</span>
-            <span class="persona-email">admin@taskflow.local</span>
-          </div>
-
           <div class="persona-card" onclick="quickLogin('lead_backend@taskflow.local')">
             <span class="persona-role">💼 Team Lead</span>
             <span class="persona-name">Sarah Jenkins</span>
@@ -96,7 +90,6 @@
             <select name="role" id="auth-role" class="form-select" onchange="handleRoleChange(this.value)">
               <option value="Member">Member (Software Engineer)</option>
               <option value="Lead">Team Lead</option>
-              <option value="Admin">Admin (Engineering Manager)</option>
             </select>
           </div>
           <div class="form-group" id="group-auth-team">
@@ -132,8 +125,14 @@
         </button>
       </form>
 
-      <div style="text-align: center; font-size: 12px; color: var(--color-text-muted); margin-top: 8px;">
-        Default seeded password for all demo accounts: <code style="font-weight: 700; color: var(--color-brand-primary); background: var(--color-brand-soft); padding: 2px 6px; border-radius: 4px;">password123</code>
+      <div style="text-align: center; font-size: 12px; color: var(--color-text-muted); margin-top: 10px;">
+        Default seeded password for demo accounts: <code style="font-weight: 700; color: var(--color-brand-primary); background: var(--color-brand-soft); padding: 2px 6px; border-radius: 4px;">password123</code>
+      </div>
+
+      <div style="text-align: center; font-size: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--color-border);">
+        <a href="/admin/login" style="color: var(--color-text-muted); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+          <span>🔒</span> System Administrator? <span style="color: var(--color-brand-primary); text-decoration: underline; font-weight: 600;">Access Admin Console</span>
+        </a>
       </div>
     </section>
   </main>
