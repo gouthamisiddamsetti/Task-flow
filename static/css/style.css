@@ -42,13 +42,13 @@
 }
 
 .hero .logo svg {
-  width: 38px;
-  height: 38px;
+  width: 60px;
+  height: 60px;
   flex-shrink: 0;
 }
 
 .hero .brand-name {
-  font-size: 26px;
+  font-size: 48px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--color-text-primary);
@@ -743,8 +743,8 @@
 
 @media (max-width: 768px) {
   .landing { grid-template-columns: 1fr; gap: 32px; padding: 20px; }
-  .hero .logo svg { width: 32px; height: 32px; }
-  .hero .brand-name { font-size: 22px; }
+  .hero .logo svg { width: 48px; height: 48px; }
+  .hero .brand-name { font-size: 38px; }
   .hero h1 { font-size: 30px; }
 }
 

@@ -130,8 +130,14 @@ body.scroll-locked {
   text-decoration: none;
   color: var(--color-text-primary);
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-lg);
+  font-size: 20px;
   white-space: nowrap;
+}
+
+.sidebar-head .logo svg {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
 }
 
 .sidebar-head .pro-badge {
