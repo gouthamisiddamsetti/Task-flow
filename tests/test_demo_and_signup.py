@@ -5,6 +5,21 @@ def test_all_demo_personas_login(client):
     from seed import ensure_seed_data
     ensure_seed_data()
 
+    login_page = client.get("/login")
+    assert login_page.status_code == 200
+    assert b"Employee Sign In" in login_page.data
+    assert b'href="/admin/login"' in login_page.data
+
+    lead_login_page = client.get("/lead/login")
+    assert lead_login_page.status_code == 200
+    assert b"Team Lead Sign In" in lead_login_page.data
+    assert b"quickLogin('lead_backend@taskflow.local')" in lead_login_page.data
+    assert b"quickLogin('dev_backend@taskflow.local')" not in lead_login_page.data
+
+    admin_login_page = client.get("/admin/login")
+    assert admin_login_page.status_code == 200
+    assert b"Administrator Email" in admin_login_page.data
+
     demos = [
         ("admin@taskflow.local", "Admin"),
         ("lead_backend@taskflow.local", "Lead"),
@@ -17,10 +32,16 @@ def test_all_demo_personas_login(client):
         user = res.get_json()["user"]
         assert user["email"] == email
         assert user["role"] == expected_role
+        dashboard = client.get("/")
+        assert dashboard.status_code == 200, f"Dashboard unavailable for {email}"
         client.post("/api/auth/logout")
 
 def test_signup_page_and_new_account_login(client):
     """Verify user can sign up with a new account and immediately log in."""
+    signup_page = client.get("/signup")
+    assert signup_page.status_code == 200
+    assert b'const initialAuthMode = "signup"' in signup_page.data
+
     # 1. Fetch available teams
     teams_res = client.get("/api/auth/teams")
     assert teams_res.status_code == 200

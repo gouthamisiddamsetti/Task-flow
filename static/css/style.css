@@ -218,6 +218,46 @@
   margin-top: 12px;
 }
 
+.login-role-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  margin-bottom: 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-canvas-subtle);
+}
+
+.login-role-switcher a {
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.login-role-switcher a[aria-current="page"] {
+  background: var(--color-surface);
+  color: var(--color-brand-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.login-role-switcher a:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+.login-role-heading {
+  margin-bottom: 16px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+}
+
 .persona-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

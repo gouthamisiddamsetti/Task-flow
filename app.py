@@ -62,8 +62,14 @@ def create_app(config_class=Config):
         return render_template("index.html")
 
     @app.route("/login")
+    @app.route("/employee/login")
+    @app.route("/lead/login")
     @app.route("/signup")
     def login_page():
+        login_role = {
+            "/lead/login": "lead",
+        }.get(request.path, "employee")
+        auth_mode = "signup" if request.path == "/signup" else "login"
         user_id = session.get("user_id")
         if user_id:
             from models import User
@@ -75,7 +81,7 @@ def create_app(config_class=Config):
             teams = Team.query.order_by(Team.name.asc()).all()
         except Exception:
             teams = []
-        return render_template("login.html", teams=teams)
+        return render_template("login.html", teams=teams, login_role=login_role, auth_mode=auth_mode)
 
     @app.route("/admin/login")
     def admin_login_page():
