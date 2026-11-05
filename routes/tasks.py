@@ -935,6 +935,9 @@ def bulk_delete():
 
 @tasks_bp.post("/reorder")
 @login_required
+# --- Line 938 (keep as is) ---
+@tasks_bp.post("/reorder")
+@login_required
 def reorder_tasks():
     """Update custom sorting order_index for tasks."""
     current_user = get_current_user()
@@ -954,14 +957,25 @@ def reorder_tasks():
     db.session.commit()
     return jsonify(ok=True, message="Task order updated."), 200
 
-@tasks_bp.post("/<int:task_id>/watch")
-@login_required
-def toggle_task_watch(task_id):
-    """Toggle watch/subscribe status on deliverable for current user."""
-    return toggle_watch_logic(task_id)
 
-@tasks_bp.get("/<int:task_id>/watch-status")
+# --- Line 966 (Update this route to resolve collision) ---
+@tasks_bp.post("/reorder-batch", endpoint="reorder_tasks_batch")
 @login_required
-def get_task_watch_status(task_id):
-    """Retrieve watch status and watcher count for deliverable."""
-    return get_watch_status_logic(task_id)
+def reorder_tasks_batch():
+    """Bulk reorder tasks within a specific column or section."""
+    current_user = get_current_user()
+    data = request.get_json(silent=True) or {}
+    order_map = data.get("order") or []
+    if not isinstance(order_map, list):
+        return jsonify(error="Invalid order mapping."), 400
+
+    for item in order_map:
+        tid = item.get("id")
+        idx = item.get("order_index")
+        if tid is not None and idx is not None:
+            task = get_accessible_task(tid, current_user)
+            if task:
+                task.order_index = idx
+
+    db.session.commit()
+    return jsonify(ok=True, message="Batch task order updated."), 200
