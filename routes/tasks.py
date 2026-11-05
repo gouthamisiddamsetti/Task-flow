@@ -935,7 +935,7 @@ def bulk_delete():
 
 @tasks_bp.post("/reorder")
 @login_required
-# --- Line 938 (keep as is) ---
+# --- Line 938: Primary reorder route ---
 @tasks_bp.post("/reorder")
 @login_required
 def reorder_tasks():
@@ -958,7 +958,7 @@ def reorder_tasks():
     return jsonify(ok=True, message="Task order updated."), 200
 
 
-# --- Line 966 (Update this route to resolve collision) ---
+# --- Line 966: Rename duplicate endpoint ---
 @tasks_bp.post("/reorder-batch", endpoint="reorder_tasks_batch")
 @login_required
 def reorder_tasks_batch():
